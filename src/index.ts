@@ -1,11 +1,15 @@
 import Express from 'express';
 import dotenv from 'dotenv';
+import bodyParser from 'body-parser';
 import { sendMessage } from './utils';
 
 dotenv.config();
 
 const app = Express();
 const port = process.env.PORT || 3001;
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 app.get('/webhook', function (req, res) {
   console.log(req.query);
