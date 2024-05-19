@@ -1,7 +1,7 @@
 import Express from 'express';
 import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
-import { sendMessage } from './utils';
+import { handleText, sendMessage } from './utils';
 
 dotenv.config();
 
@@ -32,7 +32,15 @@ app.post('/webhook', async (request, response) => {
       console.log({ change });
       for (const message of change?.value?.messages) {
         console.log({ message });
-        let { from, type } = message;
+        let { from, type, text } = message;
+
+        if (type === 'text') {
+          await handleText(from, text.body, phoneNumberId);
+        } else if (type === 'audio') {
+          // TODO: check
+          //
+        }
+
         try {
           const res = await sendMessage(
             phoneNumberId,
