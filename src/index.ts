@@ -2,6 +2,8 @@ import Express from 'express';
 import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import { handleText, sendMessage } from './utils';
+import { handleWebhook } from './handlers';
+import mockMessage from './mocks/message';
 
 dotenv.config();
 
@@ -25,37 +27,12 @@ app.get('/webhook', function (req, res) {
 
 app.post('/webhook', async (request, response) => {
   console.log('Incoming webhook: ' + JSON.stringify(request.body));
-  for (const entry of request.body.entry) {
-    console.log({ entry });
-    for (const change of entry?.changes) {
-      const phoneNumberId = change.value.metadata.phone_number_id;
-      console.log({ change });
-      for (const message of change?.value?.messages) {
-        console.log({ message });
-        let { from, type, text } = message;
+  await handleWebhook(request.body);
+  response.sendStatus(200);
+});
 
-        if (type === 'text') {
-          await handleText(from, text.body, phoneNumberId);
-        } else if (type === 'audio') {
-          // TODO: check
-          //
-        }
-
-        try {
-          const res = await sendMessage(
-            phoneNumberId,
-            from,
-            'Hello from Claudio!',
-          );
-          console.log('res');
-          console.log(res);
-        } catch (err) {
-          console.log('error');
-          console.log(err);
-        }
-      }
-    }
-  }
+app.get('/test', async (request, response) => {
+  await handleWebhook(mockMessage);
   response.sendStatus(200);
 });
 

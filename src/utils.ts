@@ -12,7 +12,7 @@ export const sendMessage = async (
       body: JSON.stringify({
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
-        to,
+        to: to.replace('54911', '5411'),
         type: 'text',
         text: { body: text },
       }),
@@ -28,7 +28,7 @@ export const sendMessage = async (
         body: JSON.stringify({
           messaging_product: 'whatsapp',
           recipient_type: 'individual',
-          to,
+          to: to.replace('54911', '5411'),
           type: 'text',
           text: { body: text },
         }),
