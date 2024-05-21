@@ -1,7 +1,6 @@
 import Express from 'express';
 import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
-import { handleText, sendMessage } from './utils';
 import { handleWebhook } from './handlers';
 import mockMessage from './mocks/message';
 
@@ -14,7 +13,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get('/webhook', function (req, res) {
-  console.log(req.query);
   if (
     req.query['hub.mode'] == 'subscribe' &&
     req.query['hub.verify_token'] == process.env.VERIFY_TOKEN

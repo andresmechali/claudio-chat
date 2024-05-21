@@ -8,15 +8,6 @@ export const sendMessage = async (
     'https://graph.facebook.com/v19.0/' + phoneNumberId + '/messages',
   );
   try {
-    console.log({
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: to.replace('54911', '5411'),
-        type: 'text',
-        text: { body: text },
-      }),
-    });
     const res = await fetch(
       'https://graph.facebook.com/v19.0/' + phoneNumberId + '/messages',
       {
@@ -40,13 +31,4 @@ export const sendMessage = async (
     console.log('Error sending message:', err);
     throw err;
   }
-};
-
-export const handleText = async (
-  from: string,
-  text: string,
-  phoneNumberId: string,
-) => {
-  console.log({ from, text, phoneNumberId });
-  console.log('SEND RESPONSE HERE');
 };
