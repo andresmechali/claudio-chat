@@ -51,11 +51,7 @@ export async function handleAudio(
       const text = await audioToText(file);
 
       if (forwarded) {
-        await sendMessage(
-          phoneNumberId,
-          from.wa_id,
-          `${from.profile.name}:\n${text}`,
-        );
+        await sendMessage(phoneNumberId, from.wa_id, text);
       } else {
         await handleText(from, text, phoneNumberId);
       }
