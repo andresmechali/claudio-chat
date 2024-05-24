@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import { handleWebhook } from './handlers';
 import mockAudio from './mocks/audio';
+import { Event } from './types';
 
 dotenv.config();
 
@@ -25,12 +26,12 @@ app.get('/webhook', function (req, res) {
 
 app.post('/webhook', async (request, response) => {
   console.log('Incoming webhook: ' + JSON.stringify(request.body));
-  await handleWebhook(request.body);
+  await handleWebhook(request.body as Event);
   response.sendStatus(200);
 });
 
 app.get('/test', async (request, response) => {
-  await handleWebhook(mockAudio);
+  await handleWebhook(mockAudio as Event);
   response.sendStatus(200);
 });
 

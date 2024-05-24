@@ -5,23 +5,24 @@ import {
   sendMessage,
   textToCompletion,
 } from './utils';
-import { Audio, Media } from './types';
+import { Audio, Media, Event, Contact } from './types';
 
 export async function handleText(
-  from: string,
+  from: Contact,
   text: string,
   phoneNumberId: string,
 ) {
   console.log({ from, text, phoneNumberId });
   const completion = await textToCompletion(text);
   const response = completion || 'Hubo un error con tu mensaje.';
-  await sendMessage(phoneNumberId, from, response);
+  await sendMessage(phoneNumberId, from.wa_id, response);
 }
 
 export async function handleAudio(
-  from: string,
+  from: Contact,
   phoneNumberId: string,
   audio: Audio,
+  forwarded: boolean,
 ) {
   try {
     const responseMedia = await fetch(
@@ -50,8 +51,15 @@ export async function handleAudio(
 
       const text = await audioToText(file);
 
-      console.log({ textInAudio: text });
-      await sendMessage(phoneNumberId, from, text);
+      if (forwarded) {
+        await sendMessage(
+          phoneNumberId,
+          from.wa_id,
+          `${from.profile.name}:\n${text}`,
+        );
+      } else {
+        await handleText(from, text, phoneNumberId);
+      }
     }
   } catch (err) {
     console.log({ err });
@@ -59,20 +67,21 @@ export async function handleAudio(
   return undefined;
 }
 
-export async function handleWebhook(body: any) {
+export async function handleWebhook(body: Event) {
   for (const entry of body.entry) {
     for (const change of entry?.changes) {
       const phoneNumberId = change.value.metadata.phone_number_id;
+      const contacts = change.value.contacts;
+      const from = contacts[0];
       if (change?.value?.messages) {
         for (const message of change.value.messages) {
-          let { from, type, text } = message;
+          let { type, text, audio, context } = message;
 
-          if (type === 'text') {
+          if (type === 'text' && text) {
             await handleText(from, text.body, phoneNumberId);
-          } else if (type === 'audio') {
+          } else if (type === 'audio' && audio) {
             try {
-              const audio = message.audio as Audio;
-              await handleAudio(from, phoneNumberId, audio);
+              await handleAudio(from, phoneNumberId, audio, context.forwarded);
             } catch (err) {
               // TODO
             }
