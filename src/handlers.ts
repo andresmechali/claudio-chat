@@ -1,4 +1,6 @@
-import { sendMessage } from './utils';
+import axios from 'axios';
+import { audioToText, responseToFile, sendMessage } from './utils';
+import { Audio, Media } from './types';
 
 export async function handleText(
   from: string,
@@ -6,16 +8,51 @@ export async function handleText(
   phoneNumberId: string,
 ) {
   console.log({ from, text, phoneNumberId });
-  return `response to '${text}'`;
+  await sendMessage(phoneNumberId, from, `response to ${text} here`);
 }
 
-export async function handleAudio(from: string, phoneNumberId: string) {
-  return `response to some audio`;
+export async function handleAudio(
+  from: string,
+  phoneNumberId: string,
+  audio: Audio,
+) {
+  try {
+    const responseMedia = await fetch(
+      `https://graph.facebook.com/v19.0/${audio.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        },
+      },
+    );
+
+    const media = (await responseMedia.json()) as Media;
+
+    const { url, mime_type } = media;
+
+    const responseAudio = await axios.get<ArrayBuffer>(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        'Content-Type': mime_type,
+      },
+      responseType: 'arraybuffer',
+    });
+
+    if (responseAudio.data) {
+      const file = await responseToFile(responseAudio, mime_type);
+
+      const text = await audioToText(file);
+
+      console.log({ textInAudio: text });
+      await sendMessage(phoneNumberId, from, text);
+    }
+  } catch (err) {
+    console.log({ err });
+  }
+  return undefined;
 }
 
 export async function handleWebhook(body: any) {
-  let response: string | undefined = undefined;
-
   for (const entry of body.entry) {
     for (const change of entry?.changes) {
       const phoneNumberId = change.value.metadata.phone_number_id;
@@ -24,21 +61,14 @@ export async function handleWebhook(body: any) {
           let { from, type, text } = message;
 
           if (type === 'text') {
-            response = await handleText(from, text.body, phoneNumberId);
+            await handleText(from, text.body, phoneNumberId);
           } else if (type === 'audio') {
-            // TODO
-            response = await handleAudio(from, phoneNumberId);
-          }
-
-          if (response) {
             try {
-              await sendMessage(phoneNumberId, from, response);
+              const audio = message.audio as Audio;
+              await handleAudio(from, phoneNumberId, audio);
             } catch (err) {
-              console.log('error responding:');
-              console.log(err);
+              // TODO
             }
-          } else {
-            console.log('Nothing to respond');
           }
         }
       }

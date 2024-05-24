@@ -2,7 +2,7 @@ import Express from 'express';
 import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import { handleWebhook } from './handlers';
-import mockMessage from './mocks/message';
+import mockAudio from './mocks/audio';
 
 dotenv.config();
 
@@ -30,7 +30,7 @@ app.post('/webhook', async (request, response) => {
 });
 
 app.get('/test', async (request, response) => {
-  await handleWebhook(mockMessage);
+  await handleWebhook(mockAudio);
   response.sendStatus(200);
 });
 
