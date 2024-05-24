@@ -60,8 +60,8 @@ export async function audioToText(file: File): Promise<string> {
       file,
       model: 'whisper-1',
       language: 'es',
-      prompt:
-        'El audio es en tono informal, creado por un amigo argentino, asique puede incluir jerga local.',
+      // prompt:
+      //   'El audio es en tono informal, creado por un amigo argentino, asique puede incluir jerga local.',
       // TODO: add prompt with previous audio, if recent. Also add common slang.
     });
 
