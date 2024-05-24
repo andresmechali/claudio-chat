@@ -15,7 +15,7 @@ export type Media = {
 };
 
 type Message = {
-  context: {
+  context?: {
     forwarded: boolean;
   };
   from: string;

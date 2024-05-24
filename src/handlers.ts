@@ -12,7 +12,6 @@ export async function handleText(
   text: string,
   phoneNumberId: string,
 ) {
-  console.log({ from, text, phoneNumberId });
   const completion = await textToCompletion(text);
   const response = completion || 'Hubo un error con tu mensaje.';
   await sendMessage(phoneNumberId, from.wa_id, response);
@@ -72,8 +71,8 @@ export async function handleWebhook(body: Event) {
     for (const change of entry?.changes) {
       const phoneNumberId = change.value.metadata.phone_number_id;
       const contacts = change.value.contacts;
-      const from = contacts[0];
-      if (change?.value?.messages) {
+      const from = contacts?.[0];
+      if (from && change?.value?.messages) {
         for (const message of change.value.messages) {
           let { type, text, audio, context } = message;
 
@@ -81,8 +80,10 @@ export async function handleWebhook(body: Event) {
             await handleText(from, text.body, phoneNumberId);
           } else if (type === 'audio' && audio) {
             try {
-              await handleAudio(from, phoneNumberId, audio, context.forwarded);
+              const isForwarded = !!context?.forwarded;
+              await handleAudio(from, phoneNumberId, audio, isForwarded);
             } catch (err) {
+              console.log({ err });
               // TODO
             }
           }
