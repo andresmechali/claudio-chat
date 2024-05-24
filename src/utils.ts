@@ -60,10 +60,37 @@ export async function audioToText(file: File): Promise<string> {
       file,
       model: 'whisper-1',
       language: 'es',
+      prompt:
+        'El audio es en tono informal, creado por un amigo argentino, asique puede incluir jerga local.',
       // TODO: add prompt with previous audio, if recent. Also add common slang.
     });
 
+    // TODO: https://platform.openai.com/docs/tutorials/meeting-minutes
+
     return transcription.text;
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function textToCompletion(text: string) {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: text,
+            },
+          ],
+        },
+      ],
+    });
+
+    return completion.choices[0].message.content;
   } catch (err) {
     throw err;
   }

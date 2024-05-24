@@ -1,5 +1,10 @@
 import axios from 'axios';
-import { audioToText, responseToFile, sendMessage } from './utils';
+import {
+  audioToText,
+  responseToFile,
+  sendMessage,
+  textToCompletion,
+} from './utils';
 import { Audio, Media } from './types';
 
 export async function handleText(
@@ -8,7 +13,9 @@ export async function handleText(
   phoneNumberId: string,
 ) {
   console.log({ from, text, phoneNumberId });
-  await sendMessage(phoneNumberId, from, `response to ${text} here`);
+  const completion = await textToCompletion(text);
+  const response = completion || 'Hubo un error con tu mensaje.';
+  await sendMessage(phoneNumberId, from, response);
 }
 
 export async function handleAudio(
