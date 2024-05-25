@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
-import { AxiosResponse } from 'axios';
+import axios, { AxiosResponse } from 'axios';
 
 dotenv.config();
 
@@ -93,5 +93,25 @@ export async function textToCompletion(text: string) {
     return completion.choices[0].message.content;
   } catch (err) {
     throw err;
+  }
+}
+
+async function refreshWhatsAppToken() {
+  const appId = process.env.WHATSAPP_APP_ID;
+  const appSecret = process.env.VERIFY_TOKEN;
+
+  try {
+    const response = await axios.get(
+      `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&grant_type=client_credentials`,
+    );
+
+    if (response.data && response.data.access_token) {
+      process.env.WHATSAPP_TOKEN = response.data.access_token;
+      console.log('WhatsApp token refreshed successfully');
+    } else {
+      console.error('Error refreshing WhatsApp token:', response.data);
+    }
+  } catch (err) {
+    console.error('Error refreshing WhatsApp token:', err);
   }
 }

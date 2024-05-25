@@ -51,7 +51,22 @@ export async function handleAudio(
       const text = await audioToText(file);
 
       if (forwarded) {
+        // Send original audio as text
         await sendMessage(phoneNumberId, from.wa_id, text);
+        // If message is long, get main points
+        if (text.length > 100) {
+          // TODO: set longer threshold
+          const shortText = await textToCompletion(
+            `Necesito que me resumas el siguiente texto, y que me respondas solo con el resumen directamente. Hacelo lo mas corto posible, y escrito desde la misma persona que el texto original. Este es el texto: ${text}`,
+          );
+          if (shortText) {
+            await sendMessage(
+              phoneNumberId,
+              from.wa_id,
+              `Resumen: ${shortText}`,
+            );
+          }
+        }
       } else {
         await handleText(from, text, phoneNumberId);
       }
@@ -63,28 +78,33 @@ export async function handleAudio(
 }
 
 export async function handleWebhook(body: Event) {
-  for (const entry of body.entry) {
-    for (const change of entry?.changes) {
-      const phoneNumberId = change.value.metadata.phone_number_id;
-      const contacts = change.value.contacts;
-      const from = contacts?.[0];
-      if (from && change?.value?.messages) {
-        for (const message of change.value.messages) {
-          let { type, text, audio, context } = message;
+  try {
+    for (const entry of body.entry) {
+      for (const change of entry?.changes) {
+        const phoneNumberId = change.value.metadata.phone_number_id;
+        const contacts = change.value.contacts;
+        const from = contacts?.[0];
+        if (from && change?.value?.messages) {
+          for (const message of change.value.messages) {
+            const { type, text, audio, context } = message;
 
-          if (type === 'text' && text) {
-            await handleText(from, text.body, phoneNumberId);
-          } else if (type === 'audio' && audio) {
-            try {
-              const isForwarded = !!context?.forwarded;
-              await handleAudio(from, phoneNumberId, audio, isForwarded);
-            } catch (err) {
-              console.log({ err });
-              // TODO
+            if (type === 'text' && text) {
+              await handleText(from, text.body, phoneNumberId);
+            } else if (type === 'audio' && audio) {
+              try {
+                const isForwarded = !!context?.forwarded;
+                await handleAudio(from, phoneNumberId, audio, isForwarded);
+              } catch (err) {
+                console.log({ err });
+                // TODO
+              }
             }
           }
         }
       }
     }
+  } catch (err) {
+    console.log({ err });
+    // TODO
   }
 }

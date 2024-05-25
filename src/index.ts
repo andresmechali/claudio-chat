@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
 import { handleWebhook } from './handlers';
 import mockAudio from './mocks/audio';
+import mockEvents from './mocks/message';
 import { Event } from './types';
 
 dotenv.config();
@@ -31,7 +32,7 @@ app.post('/webhook', async (request, response) => {
 });
 
 app.get('/test', async (request, response) => {
-  await handleWebhook(mockAudio as Event);
+  await handleWebhook(mockEvents[0]);
   response.sendStatus(200);
 });
 
