@@ -12,11 +12,9 @@ const openai = new OpenAI({
   },
 });
 
-export const sendMessage = async (
-  phoneNumberId: string,
-  to: string,
-  text: string,
-) => {
+const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+
+export const sendMessage = async (to: string, text: string) => {
   try {
     await fetch(
       'https://graph.facebook.com/v19.0/' + phoneNumberId + '/messages',
@@ -60,12 +58,15 @@ export async function audioToText(file: File): Promise<string> {
       file,
       model: 'whisper-1',
       language: 'es',
+      response_format: 'verbose_json',
       // prompt:
       //   'El audio es en tono informal, creado por un amigo argentino, asique puede incluir jerga local.',
       // TODO: add prompt with previous audio, if recent. Also add common slang.
     });
 
     // TODO: https://platform.openai.com/docs/tutorials/meeting-minutes
+
+    console.log({ transcription });
 
     return transcription.text;
   } catch (err) {
@@ -90,28 +91,8 @@ export async function textToCompletion(text: string) {
       ],
     });
 
-    return completion.choices[0].message.content;
+    return completion;
   } catch (err) {
     throw err;
-  }
-}
-
-async function refreshWhatsAppToken() {
-  const appId = process.env.WHATSAPP_APP_ID;
-  const appSecret = process.env.VERIFY_TOKEN;
-
-  try {
-    const response = await axios.get(
-      `https://graph.facebook.com/v19.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&grant_type=client_credentials`,
-    );
-
-    if (response.data && response.data.access_token) {
-      process.env.WHATSAPP_TOKEN = response.data.access_token;
-      console.log('WhatsApp token refreshed successfully');
-    } else {
-      console.error('Error refreshing WhatsApp token:', response.data);
-    }
-  } catch (err) {
-    console.error('Error refreshing WhatsApp token:', err);
   }
 }

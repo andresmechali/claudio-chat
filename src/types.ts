@@ -57,3 +57,40 @@ export type Event = {
   object: 'whatsapp_business_account';
   entry: Entry[];
 };
+
+export type User = {
+  id: string;
+  audioBytes: number;
+  audioCount: number;
+  audioSeconds: number;
+  country: string;
+  isFree: boolean;
+  isPremium: boolean;
+  language: string;
+  lastPaid: string | null;
+  lastUpdated: string | null;
+  name: string;
+  phoneNumber: string;
+  phoneNumberOriginal: string;
+  created: string;
+  tokensUsed: number;
+  timesUsed: number;
+};
+
+export type TextMessage = {
+  id: string;
+  timestamp: string;
+  text: string;
+  response: string;
+  tokensUsed: number;
+};
+
+export type AudioMessage = {
+  id: string;
+  timestamp: string;
+  forwarded: boolean;
+  mimeType: string;
+  url: string;
+  bytes: number;
+  tokensUsed: number;
+};

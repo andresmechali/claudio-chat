@@ -3,3 +3,5 @@ node_modules
 .idea
 build
 .env
+src/firebase-adminsdk.json
+firestore-credentials.json

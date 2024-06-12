@@ -1,4 +1,5 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
 import {
   audioToText,
   responseToFile,
@@ -6,15 +7,41 @@ import {
   textToCompletion,
 } from './utils';
 import { Audio, Media, Event, Contact } from './types';
+import { getOrCreateUser, updateTokensUsed } from './firebase';
 
-export async function handleText(
-  from: Contact,
-  text: string,
-  phoneNumberId: string,
-) {
+dotenv.config();
+
+async function checkIfAllowed(from: Contact, type: 'text' | 'audio') {
+  const user = await getOrCreateUser(from.wa_id, from.profile.name);
+  if (!user) {
+    throw new Error('Error getting user');
+  }
+  let isAllowed = user.isFree || user.isPremium || user.tokensUsed <= 1000;
+  if (!isAllowed) {
+    await sendMessage(
+      from.wa_id,
+      'No tenés más tokens disponibles. Podés obtener más tokens en https://www.LINK.com',
+    );
+  }
+
+  return isAllowed;
+}
+
+export async function handleText(from: Contact, text: string) {
+  // Make sure user has permissions
+  const isAllowed = checkIfAllowed(from, 'text');
+  if (!isAllowed) {
+    return;
+  }
+
   const completion = await textToCompletion(text);
-  const response = completion || 'Hubo un error con tu mensaje.';
-  await sendMessage(phoneNumberId, from.wa_id, response);
+  const response =
+    completion.choices[0].message.content || 'Hubo un error con tu mensaje.';
+  await sendMessage(from.wa_id, response);
+
+  const tokensUsed = completion.usage?.total_tokens || 0;
+
+  await updateTokensUsed(from.wa_id, tokensUsed);
 }
 
 export async function handleAudio(
@@ -23,6 +50,12 @@ export async function handleAudio(
   audio: Audio,
   forwarded: boolean,
 ) {
+  // Make sure user has permissions
+  const isAllowed = checkIfAllowed(from, 'audio');
+  if (!isAllowed) {
+    return;
+  }
+
   try {
     const responseMedia = await fetch(
       `https://graph.facebook.com/v19.0/${audio.id}`,
@@ -45,30 +78,39 @@ export async function handleAudio(
       responseType: 'arraybuffer',
     });
 
+    let tokensUsed = 0;
+
     if (responseAudio.data) {
       const file = await responseToFile(responseAudio, mime_type);
 
       const text = await audioToText(file);
 
+      tokensUsed += Math.floor(text.length / 4); // Approximate
+
       if (forwarded) {
         // Send original audio as text
-        await sendMessage(phoneNumberId, from.wa_id, text);
+        await sendMessage(from.wa_id, text);
         // If message is long, get main points
         if (text.length > 100) {
           // TODO: set longer threshold
-          const shortText = await textToCompletion(
-            `Necesito que me resumas el siguiente texto, y que me respondas solo con el resumen directamente. Hacelo lo mas corto posible, y escrito desde la misma persona que el texto original. Este es el texto: ${text}`,
+          const completion = await textToCompletion(
+            `Necesito que me resumas el siguiente texto, y que me respondas solo con el resumen directamente. Hacelo lo mas corto posible, y escrito como si lo hubiera escrito la misma persona que el texto original. Este es el texto: ${text}`,
           );
-          if (shortText) {
-            await sendMessage(
-              phoneNumberId,
-              from.wa_id,
-              `Resumen: ${shortText}`,
-            );
+          const shortText =
+            completion.choices[0].message.content ||
+            'Hubo un error con tu mensaje.';
+
+          if (completion.choices[0].message.content) {
+            tokensUsed += Math.floor(
+              completion.choices[0].message.content.length / 4,
+            ); // Approximate
+            await sendMessage(from.wa_id, `Resumen: ${shortText}`);
           }
         }
+
+        await updateTokensUsed(from.wa_id, tokensUsed, true);
       } else {
-        await handleText(from, text, phoneNumberId);
+        await handleText(from, text);
       }
     }
   } catch (err) {
@@ -89,7 +131,7 @@ export async function handleWebhook(body: Event) {
             const { type, text, audio, context } = message;
 
             if (type === 'text' && text) {
-              await handleText(from, text.body, phoneNumberId);
+              await handleText(from, text.body);
             } else if (type === 'audio' && audio) {
               try {
                 const isForwarded = !!context?.forwarded;
