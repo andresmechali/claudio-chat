@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 
 dotenv.config();
 
@@ -15,6 +15,7 @@ const openai = new OpenAI({
 const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
 
 export const sendMessage = async (to: string, text: string) => {
+  console.log({ sendMessage: { to, text } });
   try {
     await fetch(
       'https://graph.facebook.com/v19.0/' + phoneNumberId + '/messages',
