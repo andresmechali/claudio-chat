@@ -1,5 +1,7 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
+import NodeCache from 'node-cache';
+import { ChatCompletionMessageParam } from 'openai/resources';
 import {
   audioToText,
   responseToFile,
@@ -10,6 +12,10 @@ import { Audio, Media, Event, Contact } from './types';
 import { getOrCreateUser, updateTokensUsed } from './firebase';
 
 dotenv.config();
+
+const messagesCache = new NodeCache({
+  stdTTL: 60 * 60, // 1 hour
+});
 
 async function checkIfAllowed(from: Contact, type: 'text' | 'audio') {
   const user = await getOrCreateUser(from.wa_id, from.profile.name);
@@ -34,10 +40,22 @@ export async function handleText(from: Contact, text: string) {
     return;
   }
 
-  const completion = await textToCompletion(text);
+  const previousMessages = messagesCache.get<ChatCompletionMessageParam[]>(
+    from.wa_id,
+  );
+
+  const completion = await textToCompletion(text, previousMessages);
   const response =
     completion.choices[0].message.content || 'Hubo un error con tu mensaje.';
   await sendMessage(from.wa_id, response);
+
+  messagesCache.set<ChatCompletionMessageParam[]>(from.wa_id, [
+    ...(previousMessages || []),
+    {
+      role: 'assistant',
+      content: response,
+    },
+  ]);
 
   const tokensUsed = completion.usage?.total_tokens || 0;
 

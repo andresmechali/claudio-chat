@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import { AxiosResponse } from 'axios';
+import { ChatCompletionMessageParam } from 'openai/resources';
 
 dotenv.config();
 
@@ -74,11 +75,15 @@ export async function audioToText(file: File): Promise<string> {
   }
 }
 
-export async function textToCompletion(text: string) {
+export async function textToCompletion(
+  text: string,
+  messages?: ChatCompletionMessageParam[],
+) {
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
+        ...(messages ? messages : []),
         {
           role: 'user',
           content: [
