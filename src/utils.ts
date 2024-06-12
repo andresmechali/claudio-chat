@@ -16,8 +16,19 @@ const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
 
 export const sendMessage = async (to: string, text: string) => {
   console.log({ sendMessage: { to, text } });
+  console.log({
+    url: 'https://graph.facebook.com/v19.0/' + phoneNumberId + '/messages',
+    whatsappToken: process.env.WHATSAPP_TOKEN,
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: to.replace('54911', '5411'),
+      type: 'text',
+      text: { body: text },
+    }),
+  });
   try {
-    await fetch(
+    const res = await fetch(
       'https://graph.facebook.com/v19.0/' + phoneNumberId + '/messages',
       {
         method: 'POST',
@@ -34,6 +45,12 @@ export const sendMessage = async (to: string, text: string) => {
         }),
       },
     );
+    console.log('fetched');
+    const json = await res.json();
+    console.log({ json });
+    const resText = await res.text();
+    console.log({ resText });
+    console.log({ res });
   } catch (err) {
     console.log('Error sending message:', err);
     throw err;

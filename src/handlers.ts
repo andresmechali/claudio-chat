@@ -11,8 +11,6 @@ import { getOrCreateUser, updateTokensUsed } from './firebase';
 
 dotenv.config();
 
-console.log({ dotenv });
-
 async function checkIfAllowed(from: Contact, type: 'text' | 'audio') {
   const user = await getOrCreateUser(from.wa_id, from.profile.name);
   if (!user) {
